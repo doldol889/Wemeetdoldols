@@ -78,6 +78,9 @@ class MockJob:
 
 
 _jobs: dict[str, MockJob] = {}
+def new_file_id() -> str:
+    """file_id 를 미리 만든다. files.py 가 uploads/<file_id>.<확장자> 로 먼저 저장할 때 사용."""
+    return f"file-{uuid.uuid4().hex[:8]}"
 
 
 def create_job(
@@ -87,9 +90,10 @@ def create_job(
     stored_path: Optional[str] = None,
     sha256: Optional[str] = None,
     run_in_background: bool = True,
+    file_id: Optional[str] = None,
 ) -> MockJob:
     job = MockJob(
-        file_id=f"file-{uuid.uuid4().hex[:8]}",
+        file_id=file_id or new_file_id(),
         job_id=f"job-{uuid.uuid4().hex[:8]}",
         filename=filename,
         source_type=source_type,
