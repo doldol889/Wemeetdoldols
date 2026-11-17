@@ -1,0 +1,170 @@
+{
+  "_설명": "FE 개발용 샘플 응답 (schema_version 0.2). 서버 없이 화면을 만들 때 이 값을 그대로 쓰면 됩니다. 실제 응답과 필드 이름·구조가 같습니다.",
+  "_상태_확인_방법": "업로드 응답의 job_id로 GET /api/jobs/{job_id} 를 2초마다 조회. status가 succeeded 또는 failed가 되면 조회를 멈춥니다.",
+  "upload_response": {
+    "_요청": "POST /api/files (multipart/form-data, 필드명 files, 여러 개 가능) → 201",
+    "body": {
+      "schema_version": "0.2",
+      "files": [
+        {
+          "file_id": "file-1a2b3c4d",
+          "job_id": "job-5e6f7a8b",
+          "filename": "회의록.pdf",
+          "source_type": "pdf",
+          "size_bytes": 176241,
+          "status": "queued"
+        }
+      ]
+    }
+  },
+  "job_queued": {
+    "_요청": "GET /api/jobs/{job_id} → 200 · 업로드 직후 대기 중",
+    "body": {
+      "schema_version": "0.2",
+      "file_id": "file-1a2b3c4d",
+      "job_id": "job-5e6f7a8b",
+      "source_type": "pdf",
+      "status": "queued",
+      "error": null,
+      "analysis": null,
+      "recommendation": null,
+      "extraction": null
+    }
+  },
+  "job_running": {
+    "_요청": "GET /api/jobs/{job_id} → 200 · 텍스트 추출·분석 진행 중",
+    "body": {
+      "schema_version": "0.2",
+      "file_id": "file-1a2b3c4d",
+      "job_id": "job-5e6f7a8b",
+      "source_type": "pdf",
+      "status": "running",
+      "error": null,
+      "analysis": null,
+      "recommendation": null,
+      "extraction": null
+    }
+  },
+  "job_succeeded": {
+    "_요청": "GET /api/jobs/{job_id} → 200 · 분석 완료",
+    "body": {
+      "schema_version": "0.2",
+      "file_id": "file-1a2b3c4d",
+      "job_id": "job-5e6f7a8b",
+      "source_type": "pdf",
+      "status": "succeeded",
+      "error": null,
+      "analysis": {
+        "title": "프로젝트 회의록",
+        "one_line_summary": "11월 일정과 파트별 개발 역할을 정리한 회의 문서",
+        "keywords": [
+          "회의",
+          "일정",
+          "역할"
+        ],
+        "sections": [
+          {
+            "heading": "개요",
+            "summary": "회의 목적과 논의 항목",
+            "source_page": 1
+          },
+          {
+            "heading": "파트별 진행 상황",
+            "summary": "백엔드·프론트엔드·AI의 이번 주 작업 공유",
+            "source_page": 2
+          }
+        ],
+        "visual_captions": [],
+        "category": "회의록"
+      },
+      "recommendation": {
+        "filename": "2026-11-13_프로젝트_회의록.pdf",
+        "folder_candidates": [
+          {
+            "path": "프로젝트/회의록",
+            "rank": 1
+          },
+          {
+            "path": "회의자료",
+            "rank": 2
+          },
+          {
+            "path": "문서/프로젝트",
+            "rank": 3
+          }
+        ]
+      },
+      "extraction": {
+        "page_count": 3,
+        "char_count": 4821,
+        "text_preview": "11/13 주간 팀 회의\n1. 프로젝트 전체 개요 정리\n2. 각 역할별 수행 과정 공유 ..."
+      }
+    }
+  },
+  "job_failed": {
+    "_요청": "GET /api/jobs/{job_id} → 200 · 분석 실패 (재시도는 파일을 다시 업로드 → 새 job)",
+    "body": {
+      "schema_version": "0.2",
+      "file_id": "file-1a2b3c4d",
+      "job_id": "job-5e6f7a8b",
+      "source_type": "pdf",
+      "status": "failed",
+      "error": {
+        "code": "PARSE_ERROR",
+        "message": "문서를 읽는 중 오류가 발생했습니다."
+      },
+      "analysis": null,
+      "recommendation": null,
+      "extraction": null
+    }
+  },
+  "upload_errors": {
+    "_설명": "업로드 요청 자체가 거절될 때. 응답 body는 {\"detail\": {...}} 형태입니다.",
+    "unsupported_type": {
+      "status": 400,
+      "body": {
+        "detail": {
+          "code": "UNSUPPORTED_TYPE",
+          "message": "photo.png: 지원하지 않는 형식입니다 (pptx, docx, hwp, pdf만 가능)."
+        }
+      }
+    },
+    "file_too_large": {
+      "status": 413,
+      "body": {
+        "detail": {
+          "code": "FILE_TOO_LARGE",
+          "message": "big.pdf: 50MB를 넘는 파일입니다."
+        }
+      }
+    },
+    "empty_file": {
+      "status": 400,
+      "body": {
+        "detail": {
+          "code": "EMPTY_FILE",
+          "message": "empty.pdf: 내용이 없는 파일입니다."
+        }
+      }
+    },
+    "duplicate_file": {
+      "status": 409,
+      "body": {
+        "detail": {
+          "code": "DUPLICATE_FILE",
+          "message": "회의록.pdf: 이미 올린 파일입니다.",
+          "job_id": "job-5e6f7a8b"
+        }
+      }
+    },
+    "job_not_found": {
+      "status": 404,
+      "body": {
+        "detail": {
+          "code": "JOB_NOT_FOUND",
+          "message": "job-nope 작업을 찾을 수 없습니다."
+        }
+      }
+    }
+  }
+}
