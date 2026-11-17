@@ -7,11 +7,11 @@ Todo.md 4.2 "권장 API·데이터 계약" JSON을 그대로 따른다.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-SCHEMA_VERSION = "0.2"  # 0.2: extraction 추가 (11/17)
+SCHEMA_VERSION = "0.3"  # 0.2: extraction 추가 · 0.3: review(검토 결과) 추가 (11/17)
 
 
 class JobStatus(str, Enum):
@@ -21,6 +21,15 @@ class JobStatus(str, Enum):
     RUNNING = "running"      # 파싱/LLM 분석 진행 중
     SUCCEEDED = "succeeded"  # 분석 완료, analysis 채워짐
     FAILED = "failed"        # 실패, error 채워짐
+
+
+class ReviewStatus(str, Enum):
+    """사용자 검토 상태 (BE-12). FE 검토 화면의 수락 / 수정 / 거부."""
+
+    PENDING = "pending"    # 아직 검토 안 함 (분석 완료 후 기본값)
+    ACCEPTED = "accepted"  # AI 추천 그대로 수락
+    MODIFIED = "modified"  # 사용자가 고쳐서 저장
+    REJECTED = "rejected"  # 거부 (정리하지 않음)
 
 
 class ErrorInfo(BaseModel):
@@ -61,6 +70,14 @@ class Recommendation(BaseModel):
     folder_candidates: list[FolderCandidate] = Field(..., max_length=3)
 
 
+class ReviewEdits(BaseModel):
+    """사용자가 '수정'할 때 바꾼 값. 안 바꾼 칸은 비워 둔다."""
+
+    title: Optional[str] = None
+    filename: Optional[str] = None
+    folder: Optional[str] = None
+
+
 class JobResponse(BaseModel):
     """GET /api/jobs/{job_id} 응답."""
 
@@ -73,6 +90,15 @@ class JobResponse(BaseModel):
     analysis: Optional[Analysis] = None
     recommendation: Optional[Recommendation] = None
     extraction: Optional[Extraction] = None
+    review_status: ReviewStatus = ReviewStatus.PENDING
+    review_edits: Optional[ReviewEdits] = None
+
+
+class DecisionRequest(BaseModel):
+    """POST /api/jobs/{job_id}/decision 요청 본문."""
+
+    decision: Literal["accept", "modify", "reject"]
+    edits: Optional[ReviewEdits] = None
 
 
 class UploadedFile(BaseModel):
@@ -89,3 +115,11 @@ class UploadResponse(BaseModel):
 
     schema_version: str = SCHEMA_VERSION
     files: list[UploadedFile]
+
+
+class JobListResponse(BaseModel):
+    """GET /api/jobs?ids=... 응답 (여러 작업 한 번에 조회)."""
+
+    schema_version: str = SCHEMA_VERSION
+    jobs: list[JobResponse]
+    not_found: list[str] = []

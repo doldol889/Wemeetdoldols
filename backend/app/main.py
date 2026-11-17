@@ -6,7 +6,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import files
+from app.api import decisions, files
 
 app = FastAPI(
     title="WeMeet API",
@@ -23,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(files.router)
+app.include_router(decisions.router)  # BE-12 검토 결과 저장 · 여러 작업 조회
 
 
 @app.get("/health", tags=["system"])

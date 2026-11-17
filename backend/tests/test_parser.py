@@ -5,7 +5,7 @@ Claude 키는 쓰지 않는다 (규칙 기반 분석으로 확인).
 """
 import pytest
 
-from app.schemas.job import JobStatus
+from app.schemas.job import SCHEMA_VERSION, JobStatus
 from app.services import analyzer, mock_store, parser
 
 
@@ -137,7 +137,7 @@ def test_job_with_stored_file_succeeds(tmp_path):
                                 stored_path=str(p), sha256="s1", run_in_background=False)
     res = mock_store.to_response(job)
     assert res.status == JobStatus.SUCCEEDED
-    assert res.schema_version == "0.2"
+    assert res.schema_version == SCHEMA_VERSION
     assert res.extraction.char_count > 0
     assert "주간 회의록" in res.extraction.text_preview
     assert res.analysis.title == "주간 회의록"

@@ -30,6 +30,8 @@ from app.schemas.job import (
     JobResponse,
     JobStatus,
     Recommendation,
+    ReviewEdits,
+    ReviewStatus,
     Section,
 )
 
@@ -56,6 +58,10 @@ class MockJob:
     error: Optional[ErrorInfo] = None
     analysis: Optional[Analysis] = None
     extraction: Optional[Extraction] = None
+
+    # 사용자 검토 결과 (BE-12)
+    review_status: ReviewStatus = ReviewStatus.PENDING
+    review_edits: Optional[ReviewEdits] = None
 
     def status(self, now: Optional[float] = None) -> JobStatus:
         if self.stored_path:
@@ -112,6 +118,35 @@ def find_job_by_sha256(sha256: str) -> Optional[MockJob]:
     return None
 
 
+# ---------------------------------------------------------------- 검토 결과 저장 (BE-12)
+class DecisionError(Exception):
+    def __init__(self, status_code: int, code: str, message: str):
+        super().__init__(message)
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+
+
+def apply_decision(job: MockJob, decision: str, edits: Optional[ReviewEdits] = None) -> None:
+    """수락 / 수정 / 거부를 저장한다. 다시 누르면 마지막 결정으로 덮어쓴다."""
+    if job.status() != JobStatus.SUCCEEDED:
+        raise DecisionError(409, "JOB_NOT_READY", "분석이 끝난 파일만 검토할 수 있습니다.")
+
+    if decision == "accept":
+        job.review_status = ReviewStatus.ACCEPTED
+        job.review_edits = None
+    elif decision == "reject":
+        job.review_status = ReviewStatus.REJECTED
+        job.review_edits = None
+    elif decision == "modify":
+        if edits is None or not any([edits.title, edits.filename, edits.folder]):
+            raise DecisionError(400, "INVALID_DECISION", "수정할 값(title, filename, folder 중 하나 이상)을 보내 주세요.")
+        job.review_status = ReviewStatus.MODIFIED
+        job.review_edits = edits
+    else:
+        raise DecisionError(400, "INVALID_DECISION", f"알 수 없는 결정입니다: {decision}")
+
+
 # ---------------------------------------------------------------- 실제 처리 (BE-07)
 def process_job(job: MockJob) -> None:
     """저장된 파일에서 텍스트를 추출하고 분석한다. 결과는 job 에 기록."""
@@ -146,6 +181,8 @@ def to_response(job: MockJob, now: Optional[float] = None) -> JobResponse:
         job_id=job.job_id,
         source_type=job.source_type,
         status=status,
+        review_status=job.review_status,
+        review_edits=job.review_edits,
     )
 
     if job.stored_path:  # ---- 실제 처리 결과
