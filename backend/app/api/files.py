@@ -69,9 +69,10 @@ async def _save_upload(f: UploadFile) -> UploadedFile:
             job_id=existing.job_id,
         )
 
-    # 5) 저장 (원래 파일명은 한글·공백 때문에 쓰지 않고 sha256으로 저장)
+    # 5) 저장 (원래 파일명은 한글·공백 때문에 쓰지 않고 file_id로 저장)
+    file_id = mock_store.new_file_id()
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    stored_path = UPLOAD_DIR / f"{sha}.{ext}"
+    stored_path = UPLOAD_DIR / f"{file_id}.{ext}"
     stored_path.write_bytes(content)
 
     job = mock_store.create_job(
@@ -80,6 +81,7 @@ async def _save_upload(f: UploadFile) -> UploadedFile:
         size_bytes=size,
         stored_path=str(stored_path),
         sha256=sha,
+        file_id=file_id,
     )
     logger.info("upload saved: filename=%s size=%d job_id=%s", name, size, job.job_id)
 
