@@ -11,7 +11,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"  # 0.2: extraction 추가 (11/17)
 
 
 class JobStatus(str, Enum):
@@ -43,6 +43,14 @@ class Analysis(BaseModel):
     category: Optional[str] = None
 
 
+class Extraction(BaseModel):
+    """실제 텍스트 추출 결과 요약 (BE-07, schema 0.2)."""
+
+    page_count: int
+    char_count: int
+    text_preview: str  # 본문 앞 300자
+
+
 class FolderCandidate(BaseModel):
     path: str
     rank: int = Field(..., ge=1, le=3)
@@ -64,6 +72,7 @@ class JobResponse(BaseModel):
     error: Optional[ErrorInfo] = None
     analysis: Optional[Analysis] = None
     recommendation: Optional[Recommendation] = None
+    extraction: Optional[Extraction] = None
 
 
 class UploadedFile(BaseModel):
