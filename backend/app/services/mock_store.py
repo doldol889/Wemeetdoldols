@@ -38,6 +38,8 @@ class MockJob:
     filename: str
     source_type: str
     size_bytes: int
+    stored_path: Optional[str] = None  # BE-06: uploads/ 에 저장된 경로
+    sha256: Optional[str] = None       # BE-09: 중복 확인용
     created_at: float = field(default_factory=time.monotonic)
 
     def status(self, now: Optional[float] = None) -> JobStatus:
@@ -54,13 +56,21 @@ class MockJob:
 _jobs: dict[str, MockJob] = {}
 
 
-def create_job(filename: str, source_type: str, size_bytes: int) -> MockJob:
+def create_job(
+    filename: str,
+    source_type: str,
+    size_bytes: int,
+    stored_path: Optional[str] = None,
+    sha256: Optional[str] = None,
+) -> MockJob:
     job = MockJob(
         file_id=f"file-{uuid.uuid4().hex[:8]}",
         job_id=f"job-{uuid.uuid4().hex[:8]}",
         filename=filename,
         source_type=source_type,
         size_bytes=size_bytes,
+        stored_path=stored_path,
+        sha256=sha256,
     )
     _jobs[job.job_id] = job
     return job
@@ -68,6 +78,14 @@ def create_job(filename: str, source_type: str, size_bytes: int) -> MockJob:
 
 def get_job(job_id: str) -> Optional[MockJob]:
     return _jobs.get(job_id)
+
+
+def find_job_by_sha256(sha256: str) -> Optional[MockJob]:
+    """같은 내용의 파일로 만든 작업이 이미 있으면 돌려준다 (BE-09 중복 확인용)."""
+    for job in _jobs.values():
+        if job.sha256 == sha256:
+            return job
+    return None
 
 
 def to_response(job: MockJob, now: Optional[float] = None) -> JobResponse:
