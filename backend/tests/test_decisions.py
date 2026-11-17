@@ -99,3 +99,15 @@ def test_api_list_jobs(client):
     body = res.json()
     assert [j["job_id"] for j in body["jobs"]] == [a.job_id, b.job_id]
     assert body["not_found"] == ["job-nope"]
+
+
+# ---------------------------------------------------------------- create_job file_id 인자 (팀원 BE-06 요청)
+def test_create_job_with_given_file_id():
+    fid = mock_store.new_file_id()
+    job = mock_store.create_job("a.pdf", "pdf", 10, file_id=fid)
+    assert job.file_id == fid and fid.startswith("file-")
+
+
+def test_create_job_without_file_id_still_works():
+    job = mock_store.create_job("a.pdf", "pdf", 10)
+    assert job.file_id.startswith("file-")
