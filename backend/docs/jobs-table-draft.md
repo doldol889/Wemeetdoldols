@@ -61,10 +61,14 @@ queued ──▶ running ──▶ succeeded
 | `sha256` | TEXT | 중복 업로드 확인용 (BE-09) |
 | `created_at` | DATETIME | 업로드 시각 |
 
-## 3. 회의에서 정할 것
+## 3. 결정 사항 (11/17 확정)
 
-- [ ] 상태값 4개로 충분한지 (`canceled` 필요?)
-- [ ] 실패 재시도: 같은 job 재사용 vs 새 job 생성
-- [ ] FE 폴링 주기 (제안: 1~2초) vs SSE
-- [ ] 파일 크기 제한 (현재 모킹: 50MB)
-- [ ] `result_json` 필드 구조 → AI-사전2(JSON 형식 초안)와 맞추기
+- [x] 상태값은 4개(`queued` / `running` / `succeeded` / `failed`)로 확정 — MVP에 취소 기능 없음
+- [x] 실패 재시도는 **새 job 생성** — 실패 기록 보존
+- [x] FE 상태 확인은 **2초 간격 폴링**으로 시작 (SSE는 Auto-save 단계에서 검토)
+- [x] 파일 크기 제한 **50MB** 유지
+- [x] 결과 JSON 필드 확정 (`schema_version` 0.2)
+  - `analysis`: `title`, `one_line_summary`, `keywords`(3~5개), `sections`, `visual_captions`, `category`
+  - AI 응답이 `summary`로 오면 백엔드가 `one_line_summary`로 변환, 키워드 5개 초과 시 앞 5개 사용
+  - 신규 `extraction`: `page_count`, `char_count`, `text_preview`(본문 앞 300자) — BE-07에서 추가
+- [x] 에러 코드 추가: `EMPTY_FILE`(빈 파일), `DUPLICATE_FILE`(중복 파일, 409 + 기존 `job_id` 반환)
