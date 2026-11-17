@@ -32,6 +32,11 @@ queued ──▶ running ──▶ succeeded
 | `ENCRYPTED_FILE` | 암호화된 PDF/HWP |
 | `LLM_ERROR` | Claude API 오류 · 재시도 소진 |
 | `RATE_LIMITED` | API 사용량 제한 |
+| `EMPTY_FILE` | 0바이트 빈 파일 (업로드 시 400) |
+| `DUPLICATE_FILE` | 같은 내용의 파일을 다시 올림 (업로드 시 409 + 기존 `job_id`) |
+| `JOB_NOT_FOUND` | 없는 job_id 조회 (404) |
+| `JOB_NOT_READY` | 분석이 끝나지 않은 파일에 검토 결정 (409) |
+| `INVALID_DECISION` | 수정인데 바꾼 값이 없음 (400) |
 
 ## 2. jobs 테이블 초안 (SQLite / SQLAlchemy)
 
